@@ -2,6 +2,109 @@
 
 一个iOS几何图形绘制工具集合，提供气泡贝塞尔曲线和多边形贝塞尔路径的创建功能，适用于自定义UI绘制和图形设计。
 
+## 工作原理流程图
+
+```mermaid
+flowchart TD
+    A[输入几何参数] --> B{图形类型判断}
+    
+    B -->|气泡形状| C[BubbleBezierPath处理]
+    B -->|多边形| D[UIBezierPath+Polygon处理]
+    
+    C --> E[设置矩形区域和圆角]
+    E --> F[计算气泡角位置]
+    F --> G[确定气泡角朝向点]
+    
+    G --> H[计算气泡角法线]
+    H --> I[设置气泡角角度]
+    I --> J[配置气泡角圆角]
+    
+    J --> K[生成气泡贝塞尔路径]
+    K --> L[计算控制点]
+    L --> M[绘制矩形主体]
+    
+    M --> N[绘制气泡角]
+    N --> O[应用圆角处理]
+    O --> P[完成气泡路径]
+    
+    D --> Q[设置多边形顶点]
+    Q --> R[配置顶点圆角半径]
+    R --> S[计算顶点连接线]
+    
+    S --> T{是否启用圆角自适应?}
+    T -->|是| U[计算最优圆角半径]
+    T -->|否| V[使用指定圆角半径]
+    
+    U --> W[验证圆角半径有效性]
+    V --> W
+    
+    W --> X[生成多边形贝塞尔路径]
+    X --> Y[绘制顶点连接线]
+    Y --> Z[应用圆角处理]
+    
+    Z --> AA[闭合多边形路径]
+    AA --> BB[完成多边形路径]
+    
+    P --> CC[路径验证和优化]
+    BB --> CC
+    
+    CC --> DD{路径是否有效?}
+    DD -->|否| EE[路径错误处理]
+    DD -->|是| FF[路径后处理]
+    
+    EE --> GG[记录错误日志]
+    FF --> HH[路径平滑处理]
+    
+    GG --> II[返回错误状态]
+    HH --> JJ[路径缓存优化]
+    
+    JJ --> KK[返回贝塞尔路径对象]
+    II --> LL[使用默认路径]
+    
+    KK --> MM[完成几何图形绘制]
+    LL --> MM
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style E fill:#fce4ec
+    style F fill:#f1f8e9
+    style G fill:#e0f2f1
+    style H fill:#fafafa
+    style I fill:#fff8e1
+    style J fill:#f3e5f5
+    style K fill:#e8f5e8
+    style L fill:#fff3e0
+    style M fill:#fce4ec
+    style N fill:#f1f8e9
+    style O fill:#e0f2f1
+    style P fill:#fafafa
+    style Q fill:#fff8e1
+    style R fill:#f3e5f5
+    style S fill:#e8f5e8
+    style T fill:#fff3e0
+    style U fill:#fce4ec
+    style V fill:#f1f8e9
+    style W fill:#e0f2f1
+    style X fill:#fafafa
+    style Y fill:#fff8e1
+    style Z fill:#f3e5f5
+    style AA fill:#e8f5e8
+    style BB fill:#fff3e0
+    style CC fill:#fce4ec
+    style DD fill:#f1f8e9
+    style EE fill:#e0f2f1
+    style FF fill:#fafafa
+    style GG fill:#fff8e1
+    style HH fill:#f3e5f5
+    style II fill:#e8f5e8
+    style JJ fill:#fff3e0
+    style KK fill:#fce4ec
+    style LL fill:#f1f8e9
+    style MM fill:#e0f2f1
+```
+
 ## 组件列表
 
 ### [BubbleBezierPath](./BubbleBezierPath.h)

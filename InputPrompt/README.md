@@ -16,6 +16,112 @@
 - **智能截断**: 在 YYTextView 中保持文本绑定的完整性
 - **UI 组件**: 提供 PromptLabel 组件，自动显示字数统计和状态提示
 
+## 工作原理流程图
+
+```mermaid
+flowchart TD
+    A[初始化InputPrompt] --> B[设置配置参数]
+    B --> C[配置promptLength和截断选项]
+    C --> D[设置输入源和通知名称]
+    
+    D --> E[注册NSNotificationCenter监听]
+    E --> F[等待文本变化通知]
+    
+    F --> G[收到UITextViewTextDidChangeNotification]
+    G --> H[获取当前文本内容]
+    
+    H --> I[文本预处理]
+    I --> J{是否忽略换行符?}
+    
+    J -->|是| K[过滤换行符]
+    J -->|否| L[保持原始文本]
+    
+    K --> M[计算文本长度]
+    L --> M
+    
+    M --> N{是否忽略前缀长度?}
+    N -->|是| O[减去前缀长度]
+    N -->|否| P[使用完整长度]
+    
+    O --> Q[得到有效内容长度]
+    P --> Q
+    
+    Q --> R{长度是否超过预警值?}
+    R -->|是| S[触发预警回调]
+    R -->|否| T[正常长度显示]
+    
+    S --> U[调用promptLengthNeededCallback]
+    T --> V[更新UI显示]
+    
+    U --> W{是否启用自动截断?}
+    W -->|是| X[执行截断逻辑]
+    W -->|否| Y[仅显示预警]
+    
+    X --> Z[计算截断位置]
+    Z --> AA[应用截断操作]
+    
+    AA --> BB[更新输入框文本]
+    BB --> CC[触发截断完成回调]
+    
+    Y --> DD[显示预警提示]
+    CC --> EE[更新截断状态]
+    
+    V --> FF[更新PromptLabel显示]
+    DD --> FF
+    EE --> FF
+    
+    FF --> GG[检查是否需要Toast提示]
+    GG --> HH{是否显示Toast?}
+    
+    HH -->|是| II[显示Toast消息]
+    HH -->|否| JJ[完成本次处理]
+    
+    II --> KK[Toast显示完成]
+    JJ --> LL[等待下次文本变化]
+    KK --> LL
+    
+    LL --> F
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style E fill:#fce4ec
+    style F fill:#f1f8e9
+    style G fill:#e0f2f1
+    style H fill:#fafafa
+    style I fill:#fff8e1
+    style J fill:#f3e5f5
+    style K fill:#e8f5e8
+    style L fill:#fff3e0
+    style M fill:#fce4ec
+    style N fill:#f1f8e9
+    style O fill:#e0f2f1
+    style P fill:#fafafa
+    style Q fill:#fff8e1
+    style R fill:#f3e5f5
+    style S fill:#e8f5e8
+    style T fill:#fff3e0
+    style U fill:#fce4ec
+    style V fill:#f1f8e9
+    style W fill:#e0f2f1
+    style X fill:#fafafa
+    style Y fill:#fff8e1
+    style Z fill:#f3e5f5
+    style AA fill:#e8f5e8
+    style BB fill:#fff3e0
+    style CC fill:#fce4ec
+    style DD fill:#f1f8e9
+    style EE fill:#e0f2f1
+    style FF fill:#fafafa
+    style GG fill:#fff8e1
+    style HH fill:#f3e5f5
+    style II fill:#e8f5e8
+    style JJ fill:#fff3e0
+    style KK fill:#fce4ec
+    style LL fill:#f1f8e9
+```
+
 ## 实现原理
 
 ### 架构设计

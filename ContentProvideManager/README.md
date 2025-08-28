@@ -1,430 +1,244 @@
 # ContentProvideManager
 
-一个基于协议导向设计的内容提供管理框架，用于iOS应用中的动态内容管理和UI组件复用。提供Objective-C和Swift两种语言实现版。
+一个基于协议导向设计的内容提供管理框架，用于iOS应用中的动态内容管理和UI组件复用。提供Objective-C和Swift两种语言实现版本。
 
-## 项目概述
+## 功能特性
 
-ContentProvideManager 是一个轻量级的内容管理框架，它通过协议定义和工厂模式，实现了内容提供者与目标接收者之间的解耦。该框架特别适用于需要动态加载和管理UI内容的场景，如新闻应用、内容展示页面等。
+- **协议导向设计**: 基于协议定义内容提供和接收接口，支持灵活的内容管理
+- **动态内容注册**: 支持运行时注册和注销内容提供者
+- **多目标支持**: 一个内容可以注册到多个目标位置
+- **自动刷新机制**: 支持内容变更时的自动UI刷新
+- **内存安全**: 使用弱引用避免循环引用，支持ARC内存管理
+- **跨语言支持**: 提供Objective-C和Swift两种实现版本
 
-**新特性**: 现在提供完整的Swift版本，与Objective-C版本功能完全一致，开发者可以根据项目需求选择合适的语言版本。
-
-## 核心架构
-
-### 架构关系图
+## 工作原理流程图
 
 ```mermaid
-graph TB
-    subgraph "ContentProvideManager 框架"
-        A[ResContentProvideManager<br/>核心管理器] --> B[ResContentProvideGroup<br/>内容分组]
-        B --> C[ResContentProvideItem<br/>内容项]
-        
-        A --> D[目标位置管理]
-        B --> E[内容变化通知]
-        C --> F[内容生成/重载/销毁]
-        
-        subgraph "协议体系"
-            G[ResContentProvideManagerProtocol<br/>管理器协议]
-            H[ResContentProvideProtocol<br/>内容提供者协议]
-            I[ResContentTargetProtocol<br/>目标接收者协议]
-            J[ResContentProtocol<br/>内容协议]
-        end
-        
-        A -.-> G
-        C -.-> H
-        D -.-> I
-        F -.-> J
-    end
+flowchart TD
+    A[应用启动] --> B[初始化ContentProvideManager]
+    B --> C[创建内容提供者注册表]
+    C --> D[创建目标位置映射表]
     
-    subgraph "使用流程"
-        K[注册内容提供者] --> L[设置目标接收者]
-        L --> M[内容变化触发]
-        M --> N[自动通知更新]
-        N --> O[目标接收者响应]
-    end
+    D --> E[等待内容注册请求]
+    E --> F{请求类型判断}
     
-    A --> K
-    O --> A
+    F -->|注册内容提供者| G[验证提供者协议实现]
+    F -->|设置内容目标| H[验证目标协议实现]
+    F -->|内容请求| I[查找内容提供者]
+    F -->|内容刷新| J[触发刷新流程]
+    
+    G --> K{协议实现是否完整?}
+    K -->|否| L[返回注册失败]
+    K -->|是| M[添加到提供者注册表]
+    
+    H --> N{目标是否有效?}
+    N -->|否| O[返回设置失败]
+    N -->|是| P[添加到目标映射表]
+    
+    I --> Q[根据内容ID和目标ID查找]
+    Q --> R{是否找到提供者?}
+    
+    R -->|否| S[返回空值]
+    R -->|是| T[获取内容提供者实例]
+    
+    T --> U[调用createViewWithContent]
+    U --> V[返回UI组件]
+    
+    J --> W[获取目标位置的所有提供者]
+    W --> X[遍历所有内容提供者]
+    
+    X --> Y[调用目标reloadContent方法]
+    Y --> Z[目标重新加载内容]
+    
+    Z --> AA[获取所有已注册的提供者]
+    AA --> BB[为每个提供者创建UI组件]
+    
+    BB --> CC[更新目标视图内容]
+    CC --> DD[完成内容刷新]
+    
+    M --> EE[建立内容ID到目标ID的映射]
+    P --> FF[建立目标ID到目标实例的映射]
+    
+    EE --> GG[注册完成]
+    FF --> GG
+    L --> GG
+    O --> GG
+    S --> GG
+    V --> GG
+    DD --> GG
+    
+    GG --> E
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style E fill:#fce4ec
+    style F fill:#f1f8e9
+    style G fill:#e0f2f1
+    style H fill:#fafafa
+    style I fill:#fff8e1
+    style J fill:#f3e5f5
+    style K fill:#e8f5e8
+    style L fill:#fff3e0
+    style M fill:#fce4ec
+    style N fill:#f1f8e9
+    style O fill:#e0f2f1
+    style P fill:#fafafa
+    style Q fill:#fff8e1
+    style R fill:#f3e5f5
+    style S fill:#e8f5e8
+    style T fill:#fff3e0
+    style U fill:#fce4ec
+    style V fill:#f1f8e9
+    style W fill:#e0f2f1
+    style X fill:#fafafa
+    style Y fill:#fff8e1
+    style Z fill:#f3e5f5
+    style AA fill:#e8f5e8
+    style BB fill:#fff3e0
+    style CC fill:#fce4ec
+    style DD fill:#f1f8e9
+    style EE fill:#e0f2f1
+    style FF fill:#fafafa
+    style GG fill:#fff8e1
 ```
 
-### 设计模式
-- **协议导向编程 (Protocol-Oriented Programming)**: 通过协议定义接口，实现松耦合
-- **工厂模式**: 内容提供者负责创建具体的内容对象
-- **观察者模式**: 目标接收者监听内容变化并自动更新
+## 技术实现
 
-### 核心组件
+### 核心架构
+- **协议分离**: 通过`ResContentProvideProtocol`、`ResContentTargetProtocol`等协议分离关注点
+- **管理器模式**: 使用`ResContentProvideManager`统一管理内容提供者
+- **观察者模式**: 通过KVO和通知机制实现内容变更监听
+- **工厂模式**: 支持动态创建和管理内容提供者实例
 
-#### 1. ResContentProvideManager
-- **功能**: 核心管理类，负责内容提供者的注册、注销和内容分发
-- **职责**: 
-  - 管理目标位置与内容提供者的映射关系
-  - 处理内容注册和注销
-  - 触发内容刷新
-  - 提供内容查询接口
+### 实现原理
 
-#### 2. ResContentProvideGroup
-- **功能**: 按目标位置分组管理内容提供项
-- **职责**:
-  - 维护特定目标位置下的所有内容提供项
-  - 处理内容变化通知
-  - 管理自动刷新机制
+#### 内容提供机制
+- **内容提供者**: 实现`ResContentProvideProtocol`协议，负责创建和管理UI组件
+- **内容目标**: 实现`ResContentTargetProtocol`协议，负责接收和显示内容
+- **内容管理器**: 协调内容提供者和目标之间的交互
 
-#### 3. ResContentProvideItem
-- **功能**: 内容提供项，封装单个内容提供者的信息
-- **职责**:
-  - 存储内容提供者、内容ID和目标位置ID
-  - 提供内容生成、重载和销毁的接口
+#### 注册管理流程
+1. 内容提供者注册到管理器
+2. 管理器建立内容ID和目标ID的映射关系
+3. 目标位置请求内容时，管理器返回对应的提供者
+4. 内容变更时，管理器通知相关目标进行刷新
 
-## 协议体系
+## 使用示例
 
-### ResContentProvideProtocol
-内容提供者协议，定义了内容创建和管理的核心接口：
-
-#### Objective-C 版本
+### 基础使用
 ```objc
-@protocol ResContentProvideProtocol <NSObject>
+// 创建内容管理器
+ResContentProvideManager *manager = [[ResContentProvideManager alloc] init];
 
-// 必需方法：生成内容
-- (id<ResContentProtocol>)generateContentWithItem:(ResContentProvideItem *)item prop:(id _Nullable)prop;
-
-@optional
-// 可选方法：重载内容
-- (void)reloadContentWithItem:(ResContentProvideItem *)item content:(id<ResContentProtocol>)content prop:(id _Nullable)prop;
-
-// 可选方法：销毁内容
-- (void)destroyContentWithItem:(ResContentProvideItem *)item content:(id<ResContentProtocol>)content prop:(id _Nullable)prop;
-
-@end
-```
-
-#### Swift 版本
-```swift
-protocol ResContentProvideProtocol: AnyObject {
-    
-    // 必需方法：生成内容
-    func generateContent(with item: ResContentProvideItem, prop: Any?) -> ResContentProtocol
-    
-    // 可选方法：重载内容
-    func reloadContent(with item: ResContentProvideItem, content: ResContentProtocol, prop: Any?)
-    
-    // 可选方法：销毁内容
-    func destroyContent(with item: ResContentProvideItem, content: ResContentProtocol, prop: Any?)
-}
-
-// 提供默认实现
-extension ResContentProvideProtocol {
-    func reloadContent(with item: ResContentProvideItem, content: ResContentProtocol, prop: Any?) {}
-    func destroyContent(with item: ResContentProvideItem, content: ResContentProtocol, prop: Any?) {}
-}
-```
-
-### ResContentTargetProtocol
-目标接收者协议，定义了内容变化的响应接口：
-
-#### Objective-C 版本
-```objc
-@protocol ResContentTargetProtocol <NSObject>
-
-// 必需方法：处理内容变化
-- (void)provideItems:(NSDictionary<NSString *, ResContentProvideItem *> *)items 
-    changeForContentIds:(NSSet<NSString *> *)contentIds 
-    toTargetId:(NSString *)targetId;
-
-@optional
-// 可选方法：控制是否自动响应变化
-- (BOOL)shouldAutoChangeForContentIds:(NSSet<NSString *> *)contentIds toTargetId:(NSString *)targetId;
-
-@end
-```
-
-#### Swift 版本
-```swift
-protocol ResContentTargetProtocol: AnyObject {
-    
-    // 必需方法：处理内容变化
-    func provideItems(_ items: [String: ResContentProvideItem], 
-                     changeForContentIds contentIds: Set<String>, 
-                     toTargetId targetId: String)
-    
-    // 可选方法：控制是否自动响应变化
-    func shouldAutoChange(forContentIds contentIds: Set<String>, toTargetId targetId: String) -> Bool
-}
-
-// 提供默认实现
-extension ResContentTargetProtocol {
-    func shouldAutoChange(forContentIds contentIds: Set<String>, toTargetId targetId: String) -> Bool {
-        return true
-    }
-}
-```
-
-### ResContentProvideManagerProtocol
-管理器协议，定义了内容管理的核心操作：
-
-#### Objective-C 版本
-```objc
-@protocol ResContentProvideManagerProtocol <NSObject>
+// 设置内容目标
+MyContentView *targetView = [[MyContentView alloc] init];
+[manager setTarget:targetView forId:@"main_content"];
 
 // 注册内容提供者
-- (BOOL)registerProvide:(id<ResContentProvideProtocol>)provide 
-    forContentId:(NSString *)contentId 
-    toTargetId:(NSString *)targetId;
-
-// 注销内容提供者
-- (BOOL)unregisterProvideForContentId:(NSString *)contentId 
-    toTargetId:(NSString *)targetId;
+MyContentProvider *provider = [[MyContentProvider alloc] init];
+[manager registerProvide:provider forContentId:@"news_list" toTargetId:@"main_content"];
 
 // 获取内容提供者
-- (id<ResContentProvideProtocol>)provideForContentId:(NSString *)contentId 
-    toTargetId:(NSString *)targetId;
+id<ResContentProvideProtocol> provider = [manager provideForContentId:@"news_list" toTargetId:@"main_content"];
 
-// 获取目标位置的所有内容项
-- (NSDictionary<NSString *, ResContentProvideItem *> *)provideItemsWithTargetId:(NSString *)targetId;
-
-// 刷新目标位置的内容
-- (void)reloadProvideToTargetId:(NSString *)targetId;
-
-// 设置目标接收者
-- (void)setTarget:(id<ResContentTargetProtocol>)target forId:(NSString *)targetId;
-
-@end
+// 刷新内容
+[manager reloadProvideToTargetId:@"main_content"];
 ```
 
-#### Swift 版本
-```swift
-protocol ResContentProvideManagerProtocol: AnyObject {
-    
-    // 注册内容提供者
-    func registerProvide(_ provide: ResContentProvideProtocol, 
-                        forContentId contentId: String, 
-                        toTargetId targetId: String) -> Bool
-    
-    // 注销内容提供者
-    func unregisterProvide(forContentId contentId: String, 
-                          toTargetId targetId: String) -> Bool
-    
-    // 获取内容提供者
-    func provide(forContentId contentId: String, 
-                toTargetId targetId: String) -> ResContentProvideProtocol?
-    
-    // 获取目标位置的所有内容项
-    func provideItems(withTargetId targetId: String) -> [String: ResContentProvideItem]
-    
-    // 刷新目标位置的内容
-    func reloadProvide(toTargetId targetId: String)
-    
-    // 设置目标接收者
-    func setTarget(_ target: ResContentTargetProtocol, forId targetId: String)
-}
-```
-
-## 使用方法
-
-### Objective-C 版本
-
-#### 1. 创建内容提供者
-
+### 自定义内容提供者
 ```objc
 @interface MyContentProvider : NSObject <ResContentProvideProtocol>
 @end
 
 @implementation MyContentProvider
 
-- (id<ResContentProtocol>)generateContentWithItem:(ResContentProvideItem *)item prop:(id)prop {
-    // 根据item和prop创建具体的内容对象
-    UIView *contentView = [[UIView alloc] init];
-    // 配置contentView...
-    return contentView;
+- (UIView *)createViewWithContent:(id)content {
+    // 根据内容创建对应的UI组件
+    UILabel *label = [[UILabel alloc] init];
+    label.text = [content objectForKey:@"title"];
+    return label;
 }
 
-- (void)reloadContentWithItem:(ResContentProvideItem *)item content:(id<ResContentProtocol>)content prop:(id)prop {
-    // 重载内容的逻辑
+- (void)updateView:(UIView *)view withContent:(id)content {
+    // 更新现有UI组件的内容
+    if ([view isKindOfClass:[UILabel class]]) {
+        UILabel *label = (UILabel *)view;
+        label.text = [content objectForKey:@"title"];
+    }
 }
 
 @end
 ```
 
-#### 2. 创建目标接收者
-
+### 自定义内容目标
 ```objc
-@interface MyTarget : NSObject <ResContentTargetProtocol>
+@interface MyContentView : UIView <ResContentTargetProtocol>
 @end
 
-@implementation MyTarget
+@implementation MyContentView
 
-- (void)provideItems:(NSDictionary<NSString *, ResContentProvideItem *> *)items 
-    changeForContentIds:(NSSet<NSString *> *)contentIds 
-    toTargetId:(NSString *)targetId {
+- (void)reloadContent {
+    // 重新加载内容
+    [self.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
     
-    // 处理内容变化
-    for (NSString *contentId in contentIds) {
-        ResContentProvideItem *item = items[contentId];
-        if (item) {
-            UIView *content = [item generateContent:nil];
-            // 将content添加到UI中...
-        }
+    // 获取所有已注册的内容提供者
+    NSDictionary *providers = [self.contentManager provideItemsWithTargetId:self.targetId];
+    
+    for (NSString *contentId in providers) {
+        id<ResContentProvideProtocol> provider = providers[contentId];
+        UIView *contentView = [provider createViewWithContent:self.contentData[contentId]];
+        [self addSubview:contentView];
     }
 }
 
 @end
 ```
 
-#### 3. 使用管理器
+## 核心API
 
-```objc
-// 创建管理器实例
-ResContentProvideManager *manager = [[ResContentProvideManager alloc] init];
+### 内容管理器接口
+- `registerProvide:forContentId:toTargetId:`: 注册内容提供者
+- `unregisterProvideForContentId:toTargetId:`: 注销内容提供者
+- `provideForContentId:toTargetId:`: 获取指定内容提供者
+- `provideItemsWithTargetId:`: 获取目标位置的所有内容提供者
+- `reloadProvideToTargetId:`: 刷新目标位置的内容
+- `setTarget:forId:`: 设置内容目标
 
-// 设置目标接收者
-MyTarget *target = [[MyTarget alloc] init];
-[manager setTarget:target forId:@"mainPage"];
+### 内容提供者协议
+- `createViewWithContent:`: 创建UI组件
+- `updateView:withContent:`: 更新UI组件内容
+- `viewClass`: 返回UI组件类名（可选）
 
-// 注册内容提供者
-MyContentProvider *provider = [[MyContentProvider alloc] init];
-[manager registerProvide:provider forContentId:@"news" toTargetId:@"mainPage"];
+### 内容目标协议
+- `reloadContent`: 重新加载内容
+- `contentManager`: 内容管理器引用
+- `targetId`: 目标位置标识
 
-// 触发内容刷新
-[manager reloadProvideToTargetId:@"mainPage"];
-```
+## 架构优势
 
-### Swift 版本
-
-#### 1. 创建内容提供者
-
-```swift
-class MyContentProvider: ResContentProvideProtocol {
-    
-    func generateContent(with item: ResContentProvideItem, prop: Any?) -> ResContentProtocol {
-        // 根据item和prop创建具体的内容对象
-        let contentView = UIView()
-        // 配置contentView...
-        return contentView
-    }
-    
-    func reloadContent(with item: ResContentProvideItem, content: ResContentProtocol, prop: Any?) {
-        // 重载内容的逻辑
-    }
-    
-    func destroyContent(with item: ResContentProvideItem, content: ResContentProtocol, prop: Any?) {
-        // 销毁内容的逻辑
-    }
-}
-```
-
-#### 2. 创建目标接收者
-
-```swift
-class MyTarget: ResContentTargetProtocol {
-    
-    func provideItems(_ items: [String: ResContentProvideItem], 
-                     changeForContentIds contentIds: Set<String>, 
-                     toTargetId targetId: String) {
-        
-        // 处理内容变化
-        for contentId in contentIds {
-            if let item = items[contentId] {
-                let content = item.generateContent(prop: nil)
-                // 将content添加到UI中...
-            }
-        }
-    }
-    
-    func shouldAutoChange(forContentIds contentIds: Set<String>, toTargetId targetId: String) -> Bool {
-        // 自定义自动响应逻辑
-        return true
-    }
-}
-```
-
-#### 3. 使用管理器
-
-```swift
-// 创建管理器实例
-let manager = ResContentProvideManager()
-
-// 设置目标接收者
-let target = MyTarget()
-manager.setTarget(target, forId: "mainPage")
-
-// 注册内容提供者
-let provider = MyContentProvider()
-manager.registerProvide(provider, forContentId: "news", toTargetId: "mainPage")
-
-// 触发内容刷新
-manager.reloadProvide(toTargetId: "mainPage")
-```
-
-## 特性
-
-### 1. 自动内容管理
-- 支持内容的自动创建、重载和销毁
-- 智能的内容变化检测和通知机制
-
-### 2. 灵活的内容策略
-- 支持按目标位置分组管理内容
-- 可扩展的内容优先级排序机制
-
-### 3. 内存安全
-- 使用弱引用避免循环引用
-- 自动清理无效的内容提供者
-
-### 4. 异步处理
-- 支持延迟的内容变化通知
-- 避免频繁的UI更新操作
-
-### 5. 双语言支持
-- **Objective-C**: 完整的Objective-C实现，支持所有iOS版本
-- **Swift**: 现代化的Swift实现，利用Swift的协议扩展和类型安全特性
+- **解耦合**: 内容提供者和目标位置完全解耦，便于独立开发和测试
+- **可扩展**: 支持动态添加和移除内容提供者，无需修改现有代码
+- **可复用**: 内容提供者可以在多个目标位置复用
+- **类型安全**: 通过协议定义明确的接口契约
+- **性能优化**: 延迟创建UI组件，按需加载内容
 
 ## 适用场景
 
-- **新闻/内容应用**: 动态加载不同类型的内容模块
-- **电商应用**: 灵活的商品展示和推荐内容
-- **社交应用**: 动态的Feed流内容管理
-- **企业应用**: 可配置的仪表板组件
+- **动态内容展示**: 新闻列表、商品展示等动态内容管理
+- **模块化UI**: 支持动态添加和移除UI模块
+- **A/B测试**: 动态切换不同的内容提供者
+- **插件系统**: 支持第三方内容提供者扩展
+- **多语言支持**: 根据语言设置动态切换内容提供者
 
-## 技术特点
+## 系统要求
 
-- **双语言支持**: 提供Objective-C和Swift两个完整版本
-- **协议导向**: 高度解耦的架构设计
-- **内存管理**: 合理的引用计数和弱引用使用
-- **扩展性**: 易于添加新的内容类型和管理策略
-- **Swift特性**: 利用协议扩展、类型安全等现代Swift特性
+- iOS 8.0+
+- Xcode 8.0+
+- ARC支持
 
-## 项目结构
+## 许可证
 
-```
-ContentProvideManager/
-├── Obj-C/                                  # Objective-C 版本
-│   ├── ResContentProtocol.h                # 内容协议基类
-│   ├── ResContentProvideProtocol.h         # 内容提供者协议
-│   ├── ResContentProvideManagerProtocol.h  # 管理器协议
-│   ├── ResContentProvideManager.h          # 管理器头文件
-│   ├── ResContentProvideManager.m          # 管理器实现
-│   ├── ResContentProvideGroup.h            # 内容组头文件
-│   ├── ResContentProvideGroup.m            # 内容组实现
-│   ├── ResContentProvideItem.h             # 内容项头文件
-│   ├── ResContentProvideItem.m             # 内容项实现
-│   └── ResContentTargetProtocol.h          # 目标接收者协议
-├── Swift/                                  # Swift 版本
-│   ├── ResContentProtocol.swift            # 内容协议基类
-│   ├── ResContentProvideProtocol.swift     # 内容提供者协议
-│   ├── ResContentProvideManagerProtocol.swift # 管理器协议
-│   ├── ResContentProvideManager.swift      # 管理器实现
-│   ├── ResContentProvideGroup.swift        # 内容组实现
-│   ├── ResContentProvideItem.swift         # 内容项实现
-│   └── ResContentTargetProtocol.swift      # 目标接收者协议
-└── README.md                               # 项目说明文档
-```
-
-## 版本选择建议
-
-- **选择Objective-C版本**:
-  - 项目主要使用Objective-C开发
-  - 需要支持iOS 8.0以下版本
-  - 团队更熟悉Objective-C语法
-
-- **选择Swift版本**:
-  - 项目主要使用Swift开发
-  - 需要利用Swift的现代特性
-  - 追求更好的类型安全和代码可读性
+Copyright © 2023 YLCHUN. All rights reserved.
 

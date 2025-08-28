@@ -10,6 +10,77 @@
 - **高性能代理**: 使用代理模式优化滚动性能
 - **精确的偏移计算**: 基于滑动速率和分页速度的智能偏移计算
 
+## 工作原理流程图
+
+```mermaid
+flowchart TD
+    A[初始化Paging组件] --> B[设置视图尺寸参数]
+    B --> C[配置分页大小]
+    C --> D[设置前后缀偏移量]
+    
+    D --> E[调用calculatePagingIfNeed]
+    E --> F[验证参数有效性]
+    
+    F --> G{参数是否有效?}
+    G -->|否| H[返回计算失败]
+    G -->|是| I[计算分页数量]
+    
+    I --> J[计算前缀偏移量]
+    J --> K[计算后缀偏移量]
+    K --> L[计算主体分页数量]
+    
+    L --> M[生成分页索引映射]
+    M --> N[完成分页计算]
+    
+    N --> O[用户开始滚动]
+    O --> P[监听滚动事件]
+    
+    P --> Q[计算当前偏移量]
+    Q --> R[调用indexWithContentOffset]
+    
+    R --> S[确定当前分页索引]
+    S --> T{是否为分页边界?}
+    
+    T -->|是| U[触发分页切换事件]
+    T -->|否| V[继续滚动监听]
+    
+    U --> W[计算目标偏移量]
+    W --> X[应用分页动画]
+    
+    X --> Y[更新分页状态]
+    Y --> Z[完成分页切换]
+    
+    V --> P
+    Z --> P
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style E fill:#fce4ec
+    style F fill:#f1f8e9
+    style G fill:#e0f2f1
+    style H fill:#fafafa
+    style I fill:#fff8e1
+    style J fill:#f3e5f5
+    style K fill:#e8f5e8
+    style L fill:#fff3e0
+    style M fill:#fce4ec
+    style N fill:#f1f8e9
+    style O fill:#e0f2f1
+    style P fill:#fafafa
+    style Q fill:#fff8e1
+    style R fill:#f3e5f5
+    style S fill:#e8f5e8
+    style T fill:#fff3e0
+    style U fill:#fce4ec
+    style V fill:#f1f8e9
+    style W fill:#e0f2f1
+    style X fill:#fafafa
+    style Y fill:#fff8e1
+    style Z fill:#f3e5f5
+```
+
 ## 核心组件
 
 ### Paging

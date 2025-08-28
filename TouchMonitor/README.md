@@ -11,6 +11,93 @@
 - 🌐 支持 Objective-C 和 Swift 项目
 - 📱 兼容 iOS 8.0+
 
+## 工作原理流程图
+
+```mermaid
+flowchart TD
+    A[创建TouchMonitor实例] --> B[设置监控视图和代理]
+    B --> C[创建自定义手势识别器]
+    C --> D[注册到监控视图]
+    
+    D --> E[启用触摸监控]
+    E --> F[等待触摸事件]
+    
+    F --> G[用户触摸屏幕]
+    G --> H[系统触摸事件分发]
+    H --> I[TouchMonitor手势识别器捕获]
+    
+    I --> J[触摸事件类型判断]
+    J --> K{触摸事件类型}
+    
+    K -->|触摸开始| L[touchesBegan事件]
+    K -->|触摸移动| M[touchesMoved事件]
+    K -->|触摸结束| N[touchesEnded事件]
+    K -->|触摸取消| O[touchesCancelled事件]
+    
+    L --> P[记录触摸开始状态]
+    M --> Q[记录触摸移动轨迹]
+    N --> R[记录触摸结束状态]
+    O --> S[记录触摸取消状态]
+    
+    P --> T[调用代理方法]
+    Q --> T
+    R --> T
+    S --> T
+    
+    T --> U[代理对象处理触摸事件]
+    U --> V{是否实现了对应代理方法?}
+    
+    V -->|是| W[执行自定义触摸处理逻辑]
+    V -->|否| X[忽略未实现的代理方法]
+    
+    W --> Y[触摸事件处理完成]
+    X --> Z[继续默认触摸处理]
+    
+    Y --> AA[更新触摸状态]
+    Z --> AA
+    
+    AA --> BB[检查触摸连续性]
+    BB --> CC{触摸是否连续?}
+    
+    CC -->|是| DD[继续监控触摸事件]
+    CC -->|否| EE[重置触摸状态]
+    
+    DD --> F
+    EE --> F
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style E fill:#fce4ec
+    style F fill:#f1f8e9
+    style G fill:#e0f2f1
+    style H fill:#fafafa
+    style I fill:#fff8e1
+    style J fill:#f3e5f5
+    style K fill:#e8f5e8
+    style L fill:#fff3e0
+    style M fill:#fce4ec
+    style N fill:#f1f8e9
+    style O fill:#e0f2f1
+    style P fill:#fafafa
+    style Q fill:#fff8e1
+    style R fill:#f3e5f5
+    style S fill:#e8f5e8
+    style T fill:#fff3e0
+    style U fill:#fce4ec
+    style V fill:#f1f8e9
+    style W fill:#e0f2f1
+    style X fill:#fafafa
+    style Y fill:#fff8e1
+    style Z fill:#f3e5f5
+    style AA fill:#e8f5e8
+    style BB fill:#fff3e0
+    style CC fill:#fce4ec
+    style DD fill:#f1f8e9
+    style EE fill:#e0f2f1
+```
+
 ## 触摸事件类型
 
 TouchMonitor 可以监控以下触摸事件：

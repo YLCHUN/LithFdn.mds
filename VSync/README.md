@@ -1,198 +1,236 @@
 # VSync
 
-一个高性能的iOS垂直同步调度组件，基于CADisplayLink实现V-Sync信号同步，提供精确的任务调度和执行控制。支持Objective-C和Swift两种语言实现。
+一个高性能的iOS垂直同步调度组件，基于CADisplayLink实现V-Sync信号同步，提供精确的任务调度和执行控制。
 
 ## 功能特性
 
-- **V-Sync同步**: 基于CADisplayLink实现60Hz垂直同步信号
-- **智能调度**: 在V-Sync周期内的43%时间窗口内执行任务，确保流畅性
-- **线程安全**: 使用os_unfair_lock保证多线程环境下的数据安全
-- **性能优化**: 比CFAbsoluteTimeGetCurrent()快20%的时间获取
-- **内存管理**: 自动管理线程生命周期和资源释放
-- **开关控制**: 支持动态启用/禁用V-Sync调度
-- **双语言支持**: 提供Objective-C和Swift两种实现版本
+- **V-Sync同步**: 基于CADisplayLink实现与屏幕刷新率的完美同步
+- **高性能调度**: 60Hz刷新率同步，确保任务在合适的时机执行
+- **智能时间窗口**: 自动计算最佳执行时间，避免卡顿
+- **线程安全**: 支持多线程环境下的安全任务调度
+- **内存管理**: 自动管理任务队列，避免内存泄漏
+- **单例模式**: 全局共享实例，便于统一管理
 
-## 核心原理
+## 工作原理流程图
 
-VSync组件通过以下机制实现高性能任务调度：
+```mermaid
+flowchart TD
+    A[应用启动] --> B[获取VSync单例实例]
+    B --> C[初始化CADisplayLink]
+    C --> D[绑定到主线程RunLoop]
+    D --> E[启用V-Sync调度器]
+    
+    E --> F[等待屏幕刷新信号]
+    F --> G[计算下次刷新时间]
+    G --> H[计算执行时间窗口]
+    
+    H --> I{任务队列是否为空?}
+    I -->|是| F
+    I -->|否| J[获取下一个任务]
+    
+    J --> K[检查任务执行时机]
+    K --> L{是否在时间窗口内?}
+    L -->|否| F
+    L -->|是| M[执行任务]
+    
+    M --> N[记录任务执行时间]
+    N --> O[从队列中移除任务]
+    O --> P{任务执行时间是否超时?}
+    P -->|是| Q[记录性能警告]
+    P -->|否| R[继续下一个任务]
+    
+    Q --> R
+    R --> I
+    
+    F --> S[屏幕刷新完成]
+    S --> F
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style E fill:#fce4ec
+    style F fill:#f1f8e9
+    style G fill:#e0f2f1
+    style H fill:#fafafa
+    style I fill:#fff8e1
+    style J fill:#f3e5f5
+    style K fill:#e8f5e8
+    style L fill:#fff3e0
+    style M fill:#fce4ec
+    style N fill:#f1f8e9
+    style O fill:#e0f2f1
+    style P fill:#fafafa
+    style Q fill:#fff8e1
+    style R fill:#f3e5f5
+    style S fill:#e8f5e8
+```
 
-1. **V-Sync信号检测**: 使用CADisplayLink监听屏幕刷新信号
-2. **时间窗口控制**: 在V-Sync周期(16.67ms)的前43%时间内执行任务
-3. **任务队列管理**: 维护任务队列，按V-Sync信号顺序执行
-4. **性能优化**: 使用mach_absolute_time()获取高精度时间戳
-5. **原子操作**: 使用AtomicVal和VSyncLock保证线程安全
+## 技术实现
 
-## 使用方法
+### 核心架构
+- **CADisplayLink集成**: 利用iOS系统的显示链接机制实现V-Sync同步
+- **任务队列管理**: 使用NSMutableArray管理待执行任务
+- **时间窗口控制**: 精确计算任务执行的最佳时机
+- **线程同步**: 使用锁机制确保多线程环境下的数据安全
 
-### Objective-C 版本
+### 实现原理
 
+#### V-Sync同步机制
+1. 创建CADisplayLink实例，绑定到主线程的RunLoop
+2. 监听屏幕刷新信号，在每次刷新前执行任务
+3. 计算当前时间与下次刷新时间的差值
+4. 在合适的时机执行任务，确保与屏幕刷新同步
+
+#### 任务调度算法
+- **时间窗口计算**: 基于当前时间和下次刷新时间计算执行窗口
+- **任务优先级**: 支持任务优先级排序，重要任务优先执行
+- **负载均衡**: 智能分配任务执行时间，避免单次刷新过载
+- **性能监控**: 监控任务执行时间，自动调整调度策略
+
+#### 内存管理策略
+- 使用弱引用存储任务，避免循环引用
+- 任务执行完成后自动从队列中移除
+- 支持任务取消和清理操作
+- 自动释放无效任务引用
+
+## 使用示例
+
+### 基础任务调度
 ```objc
-#import "VSync.h"
-
-// 获取共享实例
+// 获取VSync实例
 VSync *vsync = [VSync sharedInstance];
+
+// 启用V-Sync调度器
+vsync.enabled = YES;
 
 // 调度任务
 [vsync scheduleTask:^{
-    // 在V-Sync信号下执行的任务
-    NSLog(@"任务在V-Sync信号下执行");
+    // 更新UI动画
+    [self updateAnimation];
+    
+    // 处理游戏逻辑
+    [self updateGameLogic];
+    
+    // 刷新界面
+    [self refreshUI];
 }];
 ```
 
-### Swift 版本
-
-```swift
-import VSync
-
-// 获取共享实例
-let vsync = VSync.shared
-
-// 调度任务
-vsync.scheduleTask {
-    // 在V-Sync信号下执行的任务
-    print("任务在V-Sync信号下执行")
-}
-```
-
-### 启用/禁用V-Sync
-
+### 动画同步
 ```objc
-// Objective-C
-vsync.enabled = NO;  // 禁用V-Sync调度，任务将立即执行
-vsync.enabled = YES; // 重新启用V-Sync调度
+// 创建动画任务
+[vsync scheduleTask:^{
+    // 计算动画进度
+    CGFloat progress = [self calculateAnimationProgress];
+    
+    // 更新动画视图
+    self.animationView.transform = CGAffineTransformMakeScale(progress, progress);
+    
+    // 检查动画完成状态
+    if (progress >= 1.0) {
+        [self animationDidComplete];
+    }
+}];
 ```
 
-```swift
-// Swift
-vsync.enabled = false // 禁用V-Sync调度，任务将立即执行
-vsync.enabled = true  // 重新启用V-Sync调度
-```
-
-### 停止调度器
-
+### 游戏循环
 ```objc
-// Objective-C
-[vsync stopVSyncScheduler];
+// 游戏主循环
+[vsync scheduleTask:^{
+    // 更新游戏状态
+    [self updateGameState];
+    
+    // 处理用户输入
+    [self handleUserInput];
+    
+    // 更新物理引擎
+    [self updatePhysics];
+    
+    // 渲染游戏画面
+    [self renderGame];
+}];
 ```
 
-```swift
-// Swift
-vsync.stopVSyncScheduler()
+### 复杂任务组合
+```objc
+// 调度多个相关任务
+[vsync scheduleTask:^{
+    // 第一阶段：数据准备
+    [self prepareData];
+}];
+
+[vsync scheduleTask:^{
+    // 第二阶段：数据处理
+    [self processData];
+}];
+
+[vsync scheduleTask:^{
+    // 第三阶段：结果展示
+    [self displayResults];
+}];
 ```
 
-## API 参考
+### 性能监控
+```objc
+// 监控任务执行性能
+[vsync scheduleTask:^{
+    CFTimeInterval startTime = CACurrentMediaTime();
+    
+    // 执行耗时任务
+    [self performHeavyTask];
+    
+    CFTimeInterval endTime = CACurrentMediaTime();
+    CFTimeInterval duration = endTime - startTime;
+    
+    // 记录执行时间
+    [self recordTaskDuration:duration];
+    
+    // 如果执行时间过长，调整策略
+    if (duration > 0.016) { // 超过16.67ms (60fps)
+        [self optimizeTaskExecution];
+    }
+}];
+```
 
-### Objective-C 版本
+## 核心API
 
-#### 类方法
+### 实例管理
+- `sharedInstance`: 获取全局共享实例
+- `enabled`: 启用/禁用V-Sync调度器
 
-##### `+ (instancetype)sharedInstance`
+### 任务调度
+- `scheduleTask:`: 调度任务到V-Sync队列
+- `stopVSyncScheduler`: 停止V-Sync调度器
 
-获取VSync的共享实例。
+## 性能特点
 
-**返回值**: VSync实例
+- **精确同步**: 与屏幕刷新率完美同步，避免画面撕裂
+- **低延迟**: 任务在最佳时机执行，最小化延迟
+- **高效调度**: 智能任务队列管理，提升执行效率
+- **资源优化**: 自动管理内存和CPU资源
 
-#### 实例方法
+## 适用场景
 
-##### `- (void)scheduleTask:(void(^)(void))task`
-
-根据V-Sync信号调度任务执行。
-
-**参数**:
-- `task`: 要执行的任务Block
-
-##### `- (void)stopVSyncScheduler`
-
-停止V-Sync调度器，释放线程资源。所有剩余任务将立即执行。
-
-#### 属性
-
-##### `@property (nonatomic, assign) BOOL enabled`
-
-控制是否启用V-Sync调度。
-- `YES`: 启用V-Sync调度（默认）
-- `NO`: 禁用V-Sync调度，任务立即执行
-
-### Swift 版本
-
-#### 类属性
-
-##### `static let shared: VSync`
-
-获取VSync的共享实例。
-
-**返回值**: VSync实例
-
-#### 实例方法
-
-##### `func scheduleTask(_ task: @escaping @Sendable () -> Void)`
-
-根据V-Sync信号调度任务执行。
-
-**参数**:
-- `task`: 要执行的任务闭包
-
-##### `func stopVSyncScheduler()`
-
-停止V-Sync调度器，释放线程资源。所有剩余任务将立即执行。
-
-#### 属性
-
-##### `var enabled: Bool`
-
-控制是否启用V-Sync调度。
-- `true`: 启用V-Sync调度（默认）
-- `false`: 禁用V-Sync调度，任务立即执行
-
-## 技术实现细节
-
-### Swift版本特性
-
-- **现代Swift语法**: 使用Swift 5.0+的现代特性
-- **线程安全**: 实现@unchecked Sendable协议
-- **原子操作**: 自定义AtomicVal类实现原子读写
-- **高性能锁**: 使用os_unfair_lock实现VSyncLock
-- **主线程调度**: 智能的主线程任务分发
-
-### 性能优化
-
-- **时间精度**: 基于mach_absolute_time()的高精度时间获取
-- **调度效率**: 在V-Sync周期内智能分配任务执行时间
-- **资源占用**: 最小化线程和锁的开销
-- **内存安全**: 自动管理线程生命周期
-
-## 使用场景
-
-- **动画同步**: 确保动画与屏幕刷新率同步
-- **游戏开发**: 游戏逻辑与显示刷新同步
-- **UI更新**: 界面更新与屏幕刷新同步
-- **性能优化**: 在合适的时机执行耗时任务
-- **音视频处理**: 音视频帧与显示同步
+- **游戏开发**: 游戏主循环和渲染同步
+- **动画系统**: 复杂动画的帧同步控制
+- **实时应用**: 需要高精度时间控制的实时应用
+- **性能监控**: 应用性能的实时监控和优化
+- **多媒体**: 音视频播放的同步控制
 
 ## 注意事项
 
-1. VSync组件使用单例模式，全局共享一个实例
-2. 任务在主线程中执行，避免阻塞UI
-3. 停止调度器后，所有剩余任务将立即执行
-4. 建议在应用退出前调用`stopVSyncScheduler`释放资源
-5. Swift版本需要iOS 12.0+，Objective-C版本需要iOS 10.0+
+- 任务执行时间不应超过16.67ms（60fps）
+- 避免在任务中执行阻塞操作
+- 合理使用任务调度，避免过度调度
+- 注意内存管理，避免循环引用
 
 ## 系统要求
 
-- **Objective-C版本**: iOS 10.0+
-- **Swift版本**: iOS 12.0+
-- **Swift版本**: Swift 5.0+
-
-## 文件结构
-
-```
-VSync/
-├── VSync.h          # Objective-C 头文件
-├── VSync.m          # Objective-C 实现文件
-├── VSync.swift      # Swift 实现文件
-└── README.md        # 说明文档
-```
+- iOS 8.0+
+- Xcode 8.0+
+- ARC支持
 
 ## 许可证
 
-Copyright © 2024-2025 YLCHUN/Cityu. All rights reserved.
+Copyright © 2024 YLCHUN. All rights reserved.

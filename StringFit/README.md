@@ -9,6 +9,74 @@ NSString 的文本适配扩展工具，提供智能的文本宽度计算和截�
 - 返回适配后的宽度信息
 - 适用于 UI 布局和文本显示优化
 
+## 工作原理流程图
+
+```mermaid
+flowchart TD
+    A[调用fs_fitStringWithFont] --> B[验证输入参数]
+    B --> C{参数是否有效?}
+    
+    C -->|否| D[返回原始文本]
+    C -->|是| E[获取原始文本长度]
+    
+    E --> F[使用NSString sizeWithFont计算完整文本尺寸]
+    F --> G{文本宽度是否超过限制?}
+    
+    G -->|否| H[返回完整文本]
+    G -->|是| I[启用截断处理]
+    
+    H --> J[设置fitWidth为实际宽度]
+    I --> K[计算截断位置]
+    
+    J --> L[返回适配结果]
+    K --> M[二分查找最优截断点]
+    
+    M --> N[测试截断后的文本宽度]
+    N --> O{宽度是否合适?}
+    
+    O -->|否| P[调整截断位置]
+    O -->|是| Q[应用截断处理]
+    
+    P --> R{是否继续查找?}
+    R -->|是| M
+    R -->|否| S[使用最佳截断位置]
+    
+    S --> Q
+    Q --> T[添加省略号]
+    T --> U[计算最终宽度]
+    
+    U --> V[设置fitWidth输出参数]
+    V --> W[返回截断后的文本]
+    
+    L --> X[完成文本适配]
+    W --> X
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style E fill:#fce4ec
+    style F fill:#f1f8e9
+    style G fill:#e0f2f1
+    style H fill:#fafafa
+    style I fill:#fff8e1
+    style J fill:#f3e5f5
+    style K fill:#e8f5e8
+    style L fill:#fff3e0
+    style M fill:#fce4ec
+    style N fill:#f1f8e9
+    style O fill:#e0f2f1
+    style P fill:#fafafa
+    style Q fill:#fff8e1
+    style R fill:#f3e5f5
+    style S fill:#e8f5e8
+    style T fill:#fff3e0
+    style U fill:#fce4ec
+    style V fill:#f1f8e9
+    style W fill:#e0f2f1
+    style X fill:#fafafa
+```
+
 ## 核心方法
 
 ```objc

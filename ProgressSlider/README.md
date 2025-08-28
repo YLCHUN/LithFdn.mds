@@ -11,6 +11,95 @@
 - **触摸监控**: 集成TouchMonitor实现精确的触摸事件处理
 - **布局灵活**: 支持自定义进度条区域和事件响应区域
 
+## 工作原理流程图
+
+```mermaid
+flowchart TD
+    A[初始化ProgressSlider] --> B[创建子视图组件]
+    B --> C[设置默认属性]
+    C --> D[配置TouchMonitor]
+    
+    D --> E[等待用户交互]
+    E --> F{交互类型判断}
+    
+    F -->|触摸开始| G[TouchMonitor开始监控]
+    F -->|触摸移动| H[计算触摸位置]
+    F -->|触摸结束| I[TouchMonitor结束监控]
+    
+    G --> J[记录触摸起始位置]
+    H --> K[计算拖拽偏移量]
+    I --> L[处理触摸结束事件]
+    
+    J --> M[更新交互状态]
+    K --> N[计算新进度值]
+    L --> O[触发进度改变事件]
+    
+    M --> P{是否为拖拽操作?}
+    N --> Q{进度值是否有效?}
+    O --> R[更新UI显示]
+    
+    P -->|是| S[启用拖拽模式]
+    P -->|否| T[启用点击模式]
+    
+    Q -->|是| U[调用代理验证]
+    Q -->|否| V[忽略无效进度]
+    
+    S --> W[更新滑块位置]
+    T --> X[计算点击位置对应进度]
+    
+    U --> Y{代理是否允许?}
+    V --> Z[保持原进度值]
+    
+    Y -->|允许| AA[更新当前进度]
+    Y -->|拒绝| BB[恢复原进度值]
+    
+    AA --> CC[触发UIControlEventValueChanged]
+    BB --> DD[触发UIControlEventEditingChanged]
+    
+    CC --> EE[更新进度条显示]
+    DD --> FF[更新滑块位置]
+    
+    EE --> GG[完成进度更新]
+    FF --> GG
+    
+    GG --> E
+    Z --> E
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style E fill:#fce4ec
+    style F fill:#f1f8e9
+    style G fill:#e0f2f1
+    style H fill:#fafafa
+    style I fill:#fff8e1
+    style J fill:#f3e5f5
+    style K fill:#e8f5e8
+    style L fill:#fff3e0
+    style M fill:#fce4ec
+    style N fill:#f1f8e9
+    style O fill:#e0f2f1
+    style P fill:#fafafa
+    style Q fill:#fff8e1
+    style R fill:#f3e5f5
+    style S fill:#e8f5e8
+    style T fill:#fff3e0
+    style U fill:#fce4ec
+    style V fill:#f1f8e9
+    style W fill:#e0f2f1
+    style X fill:#fafafa
+    style Y fill:#fff8e1
+    style Z fill:#f3e5f5
+    style AA fill:#e8f5e8
+    style BB fill:#fff3e0
+    style CC fill:#fce4ec
+    style DD fill:#f1f8e9
+    style EE fill:#e0f2f1
+    style FF fill:#fafafa
+    style GG fill:#fff8e1
+```
+
 ## 主要组件
 
 - `backgroundView`: 背景进度条视图

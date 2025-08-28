@@ -4,149 +4,223 @@
 
 ## 功能特性
 
-- 🎨 **HSL调色器** - 基于ALSH（Alpha, Lightness, Saturation, Hue）颜色空间的调色功能
-- 🔄 **颜色转换** - 支持RGB、HSL、ABGR、ALSH等多种颜色格式之间的转换
-- 🎯 **智能调色** - 提供兜底色机制和智能颜色调制
-- 🧮 **颜色计算** - 支持颜色混合、叠加、渐变等高级操作
-- 📱 **iOS原生** - 完全基于UIKit，专为iOS应用设计
+- **颜色空间转换**: 支持RGB、HSL、ABGR、ALSH等多种颜色空间之间的相互转换
+- **调色器协议**: 基于协议导向设计，支持自定义调色器实现
+- **兜底颜色管理**: 提供兜底颜色设置和获取功能，确保颜色显示的一致性
+- **高性能计算**: 使用C函数实现核心颜色转换算法，性能优异
+- **内存安全**: 支持ARC内存管理，避免内存泄漏
 
-## 项目结构
+## 工作原理流程图
 
+```mermaid
+flowchart TD
+    A[输入颜色值] --> B{颜色格式判断}
+    
+    B -->|UIColor| C[提取RGBA分量]
+    B -->|ABGR| D[解析ABGR位值]
+    B -->|ALSH| E[解析ALSH位值]
+    B -->|RGB| F[直接使用RGB值]
+    B -->|HSL| G[直接使用HSL值]
+    
+    C --> H[转换为标准RGB格式]
+    D --> I[ABGR转RGB]
+    E --> J[ALSH转HSL]
+    F --> K[RGB标准化]
+    G --> L[HSL标准化]
+    
+    H --> M[颜色空间转换引擎]
+    I --> M
+    J --> M
+    K --> M
+    L --> M
+    
+    M --> N{目标颜色空间}
+    
+    N -->|RGB| O[输出RGB值]
+    N -->|HSL| P[RGB转HSL计算]
+    N -->|ABGR| Q[RGB转ABGR打包]
+    N -->|ALSH| R[HSL转ALSH打包]
+    
+    P --> S[HSL色相计算]
+    S --> T[HSL饱和度计算]
+    T --> U[HSL亮度计算]
+    
+    Q --> V[Alpha通道处理]
+    V --> W[Blue通道处理]
+    W --> X[Green通道处理]
+    X --> Y[Red通道处理]
+    
+    R --> Z[Alpha通道处理]
+    Z --> AA[Lightness通道处理]
+    AA --> BB[Saturation通道处理]
+    BB --> CC[Hue通道处理]
+    
+    O --> DD[颜色转换完成]
+    U --> DD
+    Y --> DD
+    CC --> DD
+    
+    DD --> EE[调色器处理]
+    EE --> FF{是否有兜底颜色?}
+    
+    FF -->|是| GG[应用兜底颜色逻辑]
+    FF -->|否| HH[直接返回结果]
+    
+    GG --> II[兜底颜色验证]
+    II --> JJ{兜底颜色是否有效?}
+    
+    JJ -->|是| KK[应用兜底颜色]
+    JJ -->|否| LL[使用原始颜色]
+    
+    KK --> MM[最终颜色输出]
+    LL --> MM
+    HH --> MM
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style E fill:#fce4ec
+    style F fill:#f1f8e9
+    style G fill:#e0f2f1
+    style H fill:#fafafa
+    style I fill:#fff8e1
+    style J fill:#f3e5f5
+    style K fill:#e8f5e8
+    style L fill:#fff3e0
+    style M fill:#fce4ec
+    style N fill:#f1f8e9
+    style O fill:#e0f2f1
+    style P fill:#fafafa
+    style Q fill:#fff8e1
+    style R fill:#f3e5f5
+    style S fill:#e8f5e8
+    style T fill:#fff3e0
+    style U fill:#fce4ec
+    style V fill:#f1f8e9
+    style W fill:#e0f2f1
+    style X fill:#fafafa
+    style Y fill:#fff8e1
+    style Z fill:#f3e5f5
+    style AA fill:#e8f5e8
+    style BB fill:#fff3e0
+    style CC fill:#fce4ec
+    style DD fill:#f1f8e9
+    style EE fill:#e0f2f1
+    style FF fill:#fafafa
+    style GG fill:#fff8e1
+    style HH fill:#f3e5f5
+    style II fill:#e8f5e8
+    style JJ fill:#fff3e0
+    style KK fill:#fce4ec
+    style LL fill:#f1f8e9
+    style MM fill:#e0f2f1
 ```
-ColorPalette/
-├── ColorPalette.h/.m          # 核心调色协议和基础实现
-├── ColorALSH.h                # ALSH颜色空间协议定义
-├── ColorALSHPalette.h/.m      # HSL调色器实现
-└── ColorUtil.h/.m             # 颜色工具函数集合
-```
 
-## 核心组件
+## 技术实现
 
-### 1. ColorPalette
-基础调色协议，定义了调色器的核心接口：
+### 核心架构
+- **协议导向设计**: 通过`ColorPalette`协议定义调色器接口
+- **C函数优化**: 核心颜色转换使用C函数实现，提升性能
+- **颜色空间模型**: 支持RGB、HSL、ABGR、ALSH四种颜色空间
+- **位操作优化**: 使用位操作进行颜色值的打包和解包
 
-```objc
-@protocol ColorPalette <NSObject>
-- (UIColor *)palette:(UIColor *)color;
-@end
-```
+### 实现原理
 
-主要功能：
-- 颜色兜底处理
-- 基础调色操作
+#### 颜色空间转换
+- **RGB ↔ HSL**: 基于数学公式的颜色空间转换算法
+- **ABGR格式**: 32位整数存储，A(8位) + B(8位) + G(8位) + R(8位)
+- **ALSH格式**: 32位整数存储，A(8位) + L(8位) + S(8位) + H(8位)
 
-### 2. ColorALSH
-ALSH颜色空间协议，定义了Alpha、Lightness、Saturation、Hue四个通道：
-
-```objc
-@protocol ColorALSH <NSObject>
-@property (nonatomic, strong, nullable) NSNumber *H; // 0~360
-@property (nonatomic, strong, nullable) NSNumber *L; // 0~100
-@property (nonatomic, strong, nullable) NSNumber *S; // 0~100
-@property (nonatomic, strong, nullable) NSNumber *A; // 0~100
-@end
-```
-
-### 3. ColorALSHPalette
-HSL调色器的具体实现，继承自ColorPalette并实现ColorALSH协议：
-
-- **ALSH调制**：`modulatedALSH:` 方法
-- **智能调色**：支持JavaScript风格的调色脚本
-- **工具方法**：最近值查找、值范围限制等
-
-### 4. ColorUtil
-丰富的颜色工具函数集合：
-
-#### 颜色格式转换
-- `UIColor_to_abgr()` / `abgr_to_UIColor()`
-- `UIColor_to_alsh()` / `alsh_to_UIColor()`
-- `abgr_to_alsh()` / `alsh_to_abgr()`
-
-#### 颜色操作
-- **混合**：`abgr_mix()` / `UIColor_mix()`
-- **叠加**：`abgr_filter()` / `UIColor_filter()`
-- **渐变**：`abgr_gradation()` / `UIColor_gradation()`
-- **中位色**：`abgr_median()` / `UIColor_median()`
+#### 调色器机制
+- 通过`ColorPalette`协议定义调色接口
+- 支持兜底颜色设置，确保颜色显示的一致性
+- 可扩展的调色器实现，支持自定义调色逻辑
 
 ## 使用示例
 
-### 基础调色
+### 基础颜色转换
 ```objc
-// 创建HSL调色器
-ColorALSHPalette *palette = [ColorALSHPalette palette:^(id<ColorALSH> alsh) {
-    alsh.H = @30;           // 设置色相为30度
-    alsh.L = @60;           // 设置亮度为60%
-    alsh.S = @80;           // 设置饱和度为80%
-    alsh.A = @100;          // 设置透明度为100%
-}];
+// RGB转ABGR
+UIColor *color = [UIColor redColor];
+uint32_t abgr = UIColor_to_abgr(color);
 
-// 应用调色
-UIColor *originalColor = [UIColor redColor];
-UIColor *adjustedColor = [palette palette:originalColor];
+// ABGR转UIColor
+UIColor *convertedColor = abgr_to_UIColor(abgr);
+
+// RGB转HSL
+float r = 1.0, g = 0.0, b = 0.0;
+float h, s, l;
+rgb2hsl(r, g, b, &h, &s, &l);
 ```
 
-### JavaScript风格调色
+### 调色器使用
 ```objc
-// 使用JavaScript风格的调色脚本
-NSString *script = @"if (a = 10) { l = clampValue(l, 20, 60); s = nearestValue(s, [10, 20, 30]); h = 30; }";
-id<ColorALSH>(^paletteBlock)(id<ColorALSH>) = [ColorALSHPalette jsPaletteContext:script];
+// 创建调色器
+ColorPalette *palette = [[ColorPalette alloc] init];
 
-// 应用调色
-id<ColorALSH> alsh = /* 获取当前颜色的ALSH值 */;
-id<ColorALSH> result = paletteBlock(alsh);
+// 设置兜底颜色
+[palette setColor:[UIColor redColor] spare:[UIColor blueColor]];
+
+// 获取兜底颜色
+UIColor *spareColor = [palette spareColor:[UIColor redColor]];
+
+// 执行调色
+UIColor *adjustedColor = [palette palette:[UIColor redColor]];
 ```
 
-### 颜色转换
+### ALSH颜色空间操作
 ```objc
-// RGB转ALSH
-UIColor *rgbColor = [UIColor blueColor];
-uint32_t alshValue = UIColor_to_alsh(rgbColor);
+// 创建ALSH颜色
+id<ColorALSH> alshColor = [[ColorALSH alloc] init];
+alshColor.H = @(0);      // 色相 0-360
+alshColor.S = @(100);    // 饱和度 0-100
+alshColor.L = @(50);     // 亮度 0-100
+alshColor.A = @(100);    // 透明度 0-100
 
-// ALSH转RGB
-UIColor *convertedColor = alsh_to_UIColor(alshValue);
+// ALSH转UIColor
+uint32_t alsh = alsh_seal(100, 50, 100, 0);
+UIColor *color = alsh_to_UIColor(alsh);
 ```
 
-### 颜色混合
-```objc
-// 混合两个颜色
-UIColor *color1 = [UIColor redColor];
-UIColor *color2 = [UIColor blueColor];
-UIColor *mixedColor = UIColor_mix(color1, color2);
+## 核心API
 
-// 创建渐变
-UIColor *gradientColor = UIColor_gradation(color1, 0.5, color2);
-```
+### 颜色转换函数
+- `UIColor_to_abgr(UIColor *)`: UIColor转ABGR格式
+- `abgr_to_UIColor(uint32_t)`: ABGR格式转UIColor
+- `UIColor_to_alsh(UIColor *)`: UIColor转ALSH格式
+- `alsh_to_UIColor(uint32_t)`: ALSH格式转UIColor
 
-## 安装要求
+### 颜色空间转换
+- `rgb2hsl(float, float, float, float*, float*, float*)`: RGB转HSL
+- `hsl2rgb(float, float, float, float*, float*, float*)`: HSL转RGB
+
+### 调色器接口
+- `palette(UIColor *)`: 执行调色操作
+- `spareColor(UIColor *)`: 获取兜底颜色
+- `setColor:spare:`: 设置兜底颜色
+
+## 性能特点
+
+- **高效转换**: C函数实现，避免Objective-C方法调用开销
+- **位操作优化**: 使用位操作进行颜色值处理
+- **内存友好**: 支持ARC，自动内存管理
+- **线程安全**: 纯函数实现，无状态依赖
+
+## 适用场景
+
+- **UI设计工具**: 颜色选择和调色功能
+- **图像处理**: 颜色空间转换和调整
+- **主题系统**: 动态颜色管理和切换
+- **游戏开发**: 实时颜色计算和调整
+- **数据可视化**: 颜色映射和渐变生成
+
+## 系统要求
 
 - iOS 8.0+
 - Xcode 8.0+
-- Objective-C
-
-## 使用方法
-
-1. 将项目文件添加到您的iOS项目中
-2. 导入需要的头文件
-3. 根据需要创建调色器实例
-4. 调用相应的方法进行颜色处理
-
-## 注意事项
-
-- ALSH颜色空间：A(0-100), L(0-100), S(0-100), H(0-360)
-- ABGR颜色空间：A(0-255), B(0-255), G(0-255), R(0-255)
-- 所有颜色操作都支持透明度通道
-- JavaScript调色脚本需要遵循特定语法规则
+- ARC支持
 
 ## 许可证
 
 Copyright © 2024 YLCHUN. All rights reserved.
-
-## 贡献
-
-欢迎提交Issue和Pull Request来改进这个项目。
-
-## 更新日志
-
-- **2024/3/15** - 添加ColorALSH协议
-- **2024/3/8** - 创建基础ColorPalette框架
-- **2024/3/7** - 项目初始化
