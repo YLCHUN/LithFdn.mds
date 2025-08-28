@@ -87,38 +87,12 @@ NSObject的延迟执行扩展工具，支持Selector和Block两种方式，自�
 - **内存管理**: ARC支持，智能引用管理
 - **性能优化**: 底层优化，最小化性能开销
 
-## 📦 安装使用
-
-### 手动集成
-1. 将需要的组件目录复制到项目中
-2. 导入对应的头文件
-3. 根据组件文档进行配置和使用
-
 ### 组件依赖
 大部分组件无外部依赖，可直接使用。少数组件可能需要：
 - iOS 8.0+ (基础组件)
 - iOS 13.0+ (DynamicImage等新特性组件)
 - ARC支持
-
-## 🔍 使用示例
-
-### 快速开始
-```objc
-// 使用VSync进行动画同步
-VSync *vsync = [VSync sharedInstance];
-[vsync scheduleTask:^{
-    [self updateAnimation];
-}];
-
-// 使用ColorPalette进行颜色转换
-uint32_t abgr = UIColor_to_abgr([UIColor redColor]);
-UIColor *convertedColor = abgr_to_UIColor(abgr);
-
-// 使用ControlHandler绑定事件
-[button ca_addHandler:^(UIButton *sender) {
-    NSLog(@"按钮被点击");
-} forControlEvents:UIControlEventTouchUpInside];
-```
+- KVOController (NestedScrollView、ViewHidden)
 
 ### 组件组合使用
 ```objc
@@ -156,16 +130,6 @@ UIColor *convertedColor = abgr_to_UIColor(abgr);
 ## 📄 许可证
 
 Copyright © 2024-2025 YLCHUN/Cityu. All rights reserved.
-
-## 🤝 贡献指南
-
-欢迎提交Issue和Pull Request来改进这些组件：
-
-1. Fork项目
-2. 创建功能分支
-3. 提交更改
-4. 推送到分支
-5. 创建Pull Request
 
 ## 📞 联系方式
 
