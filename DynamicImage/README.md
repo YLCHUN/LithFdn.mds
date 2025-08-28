@@ -15,59 +15,34 @@
 
 ```mermaid
 flowchart TD
-    A[创建ImageDynamicAsset] --> B[设置图片提供者Block]
-    B --> C[注册到系统图片缓存]
+    A[创建ImageDynamicAsset] --> B[传入图片提供者Block]
+    B --> C[调用resolvedImageWithStyle]
     
-    C --> D[等待图片请求]
-    D --> E{图片请求类型}
+    C --> D[执行图片提供者Block获取图片]
+    D --> E[克隆图片避免修改原始图片]
     
-    E -->|resolvedImageWithStyle| F[获取当前UI样式]
-    E -->|isDynamicAssetImage| G[检测动态图片类型]
-    E -->|rawImageFromDynamicAsset| H[提取原始图片数据]
+    E --> F[创建_IDATrait关联对象]
+    F --> G[设置运行时动态子类]
     
-    F --> I[检查图片缓存]
-    I --> J{缓存中是否存在?}
+    G --> H[拦截imageWithConfiguration:方法]
+    H --> I[返回处理后的图片]
     
-    J -->|是| K[返回缓存的图片]
-    J -->|否| L[调用图片提供者Block]
+    I --> J[图片使用过程中]
+    J --> K{系统调用imageWithConfiguration?}
     
-    L --> M[执行图片生成逻辑]
-    M --> N{生成方式判断}
+    K -->|是| L[检查traitCollection样式]
+    K -->|否| M[正常使用图片]
     
-    N -->|从文件加载| O[加载本地图片文件]
-    N -->|动态生成| P[使用Core Graphics生成]
-    N -->|图片克隆| Q[克隆现有图片]
-    N -->|滤镜处理| R[应用图片滤镜]
+    L --> N{样式是否匹配?}
+    N -->|是| O[返回当前图片]
+    N -->|否| P[重新调用图片提供者Block]
     
-    O --> S[图片数据验证]
-    P --> S
-    Q --> S
+    P --> Q[获取新样式图片]
+    Q --> R[返回新样式图片]
+    
+    O --> S[图片生命周期结束]
     R --> S
-    
-    S --> T{图片是否有效?}
-    T -->|否| U[使用兜底图片]
-    T -->|是| V[图片后处理]
-    
-    U --> W[记录错误日志]
-    V --> X[图片格式优化]
-    
-    W --> Y[返回兜底图片]
-    X --> Z[添加到图片缓存]
-    
-    Z --> AA[返回生成的图片]
-    K --> BB[图片使用完成]
-    Y --> BB
-    AA --> BB
-    
-    BB --> CC{是否需要释放?}
-    CC -->|是| DD[从缓存中移除]
-    CC -->|否| EE[保持缓存状态]
-    
-    DD --> FF[释放图片内存]
-    EE --> GG[更新缓存状态]
-    
-    FF --> HH[完成图片生命周期]
-    GG --> HH
+    M --> S
     
     style A fill:#e1f5fe
     style B fill:#f3e5f5
@@ -88,49 +63,43 @@ flowchart TD
     style Q fill:#fff8e1
     style R fill:#f3e5f5
     style S fill:#e8f5e8
-    style T fill:#fff3e0
-    style U fill:#fce4ec
-    style V fill:#f1f8e9
-    style W fill:#e0f2f1
-    style X fill:#fafafa
-    style Y fill:#fff8e1
-    style Z fill:#f3e5f5
-    style AA fill:#e8f5e8
-    style BB fill:#fff3e0
-    style CC fill:#fce4ec
-    style DD fill:#f1f8e9
-    style EE fill:#e0f2f1
-    style FF fill:#fafafa
-    style GG fill:#fff8e1
-    style HH fill:#f3e5f5
 ```
 
 ## 技术实现
 
 ### 核心架构
 - **图片提供者模式**: 使用Block闭包作为图片提供者，支持动态生成
-- **运行时图片创建**: 在运行时根据样式动态创建图片
-- **图片缓存机制**: 智能缓存不同样式的图片，提升性能
-- **内存管理**: 自动管理图片内存，避免内存泄漏
+- **运行时动态子类**: 通过Runtime创建动态子类，拦截关键方法调用
+- **图片克隆机制**: 使用Core Graphics创建图片副本，避免修改原始图片
+- **关联对象存储**: 通过Associated Objects存储图片的元数据信息
+- **方法拦截**: 拦截UIImage的关键方法，实现动态样式切换
 
 ### 实现原理
 
 #### 动态图片机制
 1. 创建ImageDynamicAsset实例，传入图片提供者Block
-2. 图片提供者Block根据UIUserInterfaceStyle返回对应图片
-3. 系统自动调用resolvedImageWithStyle:方法获取当前样式图片
-4. 支持图片的动态切换和缓存
+2. 调用resolvedImageWithStyle获取指定样式的图片
+3. 如果指定样式没有图片，自动尝试其他样式作为兜底
+4. 图片被克隆并设置运行时动态子类
+5. 动态子类拦截imageWithConfiguration:等方法调用
+6. 当系统需要不同样式图片时，通过拦截的方法重新获取
+
+#### 运行时动态子类创建
+- 使用objc_allocateClassPair创建动态子类
+- 拦截imageWithConfiguration:方法，检查traitCollection样式
+- 拦截resizableImageWithCapInsets:方法，支持可拉伸图片
+- 通过object_setClass设置图片的isa指针
 
 #### 深色模式适配
 - 监听UIUserInterfaceStyle变化
 - 根据当前样式自动选择对应图片
 - 支持light、dark、unspecified三种样式
-- 平滑的图片切换动画
+- 智能兜底机制，确保图片显示
 
 #### 图片克隆技术
-- 使用Core Graphics创建图片副本
+- 使用imageWithBaselineOffsetFromBottom创建图片副本
 - 保持原始图片的尺寸和质量
-- 支持各种图片格式（PNG、JPEG等）
+- 支持动画图片的克隆
 - 避免修改原始图片资源
 
 ## 使用示例
@@ -236,19 +205,32 @@ ImageDynamicAsset *complexAsset = [ImageDynamicAsset assetWithImageProvider:^UII
 - `assetWithImageProvider:`: 便利构造方法
 
 ### 图片解析
-- `resolvedImageWithStyle:`: 根据样式解析图片
-- `cloneImageFromImage:`: 克隆现有图片
+- `resolvedImageWithStyle:`: 根据样式解析图片，支持兜底逻辑
+- `imageWithStyle:`: 获取指定样式的图片
+- `rawImageWithStyle:`: 执行图片提供者Block获取原始图片
+
+### 图片克隆
+- `cloneImageFromImage:`: 克隆现有图片，支持动画图片
+
+### 动态类设置
+- `setDynamicClassToImage:`: 为图片设置运行时动态子类
 
 ### 工具方法
 - `isDynamicAssetImage:`: 检测是否为动态图片
 - `rawImageFromDynamicAssetImage:`: 提取原始图片
 
+### UIImage分类方法
+- `imageWithDynamicProvider:`: 快速创建动态图片
+- `imageWithLight:dark:`: 创建支持深色模式的图片
+- `dynamicProviderRawImage:`: 获取动态图片的原始图片
+- `isDynamicProviderImage:`: 检测是否为动态提供者图片
+
 ## 性能特点
 
-- **智能缓存**: 自动缓存不同样式的图片，避免重复生成
-- **延迟加载**: 按需生成图片，减少内存占用
-- **图片优化**: 支持图片压缩和格式优化
-- **内存管理**: 自动释放不需要的图片资源
+- **按需生成**: 只在需要时生成图片，减少内存占用
+- **图片克隆**: 避免重复创建相同图片，提升性能
+- **运行时优化**: 通过动态子类实现高效的方法拦截
+- **内存管理**: 自动管理图片内存，避免内存泄漏
 
 ## 适用场景
 
@@ -263,7 +245,8 @@ ImageDynamicAsset *complexAsset = [ImageDynamicAsset assetWithImageProvider:^UII
 - 需要iOS 13.0+支持
 - 图片提供者Block会在主线程调用
 - 避免在Block中执行耗时操作
-- 合理使用图片缓存，避免内存占用过大
+- 图片克隆会创建新的图片实例，注意内存管理
+- 动态子类创建是线程安全的，使用pthread_mutex保护
 
 ## 系统要求
 
